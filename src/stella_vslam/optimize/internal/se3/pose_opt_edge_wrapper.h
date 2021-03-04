@@ -5,8 +5,10 @@
 #include "stella_vslam/camera/fisheye.h"
 #include "stella_vslam/camera/equirectangular.h"
 #include "stella_vslam/camera/radial_division.h"
+#include "stella_vslam/camera/omnidirectional.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 #include "stella_vslam/optimize/internal/se3/perspective_pose_opt_edge.h"
 #include "stella_vslam/optimize/internal/se3/equirectangular_pose_opt_edge.h"
+#include "stella_vslam/optimize/g2o/se3/omnidirectional_pose_opt_edge.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 
 #include <g2o/core/robust_kernel_impl.h>
 
@@ -161,6 +163,7 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
 
             break;
         }
+
         case camera::model_type_t::RadialDivision: {
             const auto c = static_cast<const camera::radial_division*>(camera_);
             if (is_monocular_) {
@@ -202,6 +205,34 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
             }
             break;
         }
+
+        //G. Caron, Mar. 2021
+        case camera::model_type_t::Omnidirectional: {
+            assert(is_monocular_);
+
+            auto c = static_cast<camera::omnidirectional*>(camera_);
+
+            auto edge = new omnidirectional_pose_opt_edge();
+
+            const Vec2_t obs{obs_x, obs_y};
+            edge->setMeasurement(obs);
+            edge->setInformation(Mat22_t::Identity() * inv_sigma_sq);
+
+            edge->fx_ = c->fx_;
+            edge->fy_ = c->fy_;
+            edge->cx_ = c->cx_;
+            edge->cy_ = c->cy_;
+            edge->xi_ = c->xi_;
+
+            edge->pos_w_ = pos_w;
+
+            edge->setVertex(0, shot_vtx);
+
+            edge_ = edge;
+
+            break;
+        }
+
     }
 
     // loss functionを設定
@@ -243,6 +274,11 @@ inline bool pose_opt_edge_wrapper::depth_is_positive() const {
             else {
                 return static_cast<stereo_perspective_pose_opt_edge*>(edge_)->stereo_perspective_pose_opt_edge::depth_is_positive();
             }
+        }
+        //G. Caron, Mar. 2021
+        case camera::model_type_t::Omnidirectional: {
+                //return static_cast<omnidirectional_pose_opt_edge*>(edge_)->omnidirectional_pose_opt_edge::depth_is_positive();
+                return true;
         }
         case camera::model_type_t::Equirectangular: {
             return true;

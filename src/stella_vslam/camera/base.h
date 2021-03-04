@@ -25,10 +25,11 @@ enum class model_type_t {
     Perspective = 0,
     Fisheye = 1,
     Equirectangular = 2,
-    RadialDivision = 3
+    RadialDivision = 3,
+    Omnidirectional = 4 //G. Caron, Mar. 2021, rebase Feb. 2023
 };
 
-const std::array<std::string, 4> model_type_to_string = {{"Perspective", "Fisheye", "Equirectangular", "RadialDivision"}};
+const std::array<std::string, 5> model_type_to_string = {{"Perspective", "Fisheye", "Equirectangular", "RadialDivision", "Omnidirectional"}};  //G. Caron, Mar. 2021, rebase Feb. 2023
 
 enum class color_order_t {
     Gray = 0,

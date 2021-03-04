@@ -60,6 +60,11 @@ model_type_t base::load_model_type(const YAML::Node& yaml_node) {
     else if (model_type_str == "radial_division") {
         return camera::model_type_t::RadialDivision;
     }
+    //G. Caron, Mar. 2021
+    else if (model_type_str == "omnidirectional") {
+        return camera::model_type_t::Omnidirectional;
+    }
+
     throw std::runtime_error("Invalid camera model: " + model_type_str);
 }
 
