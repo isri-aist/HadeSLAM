@@ -1,12 +1,12 @@
-//G. Caron, Mar. 2021
-#include "openvslam/camera/omnidirectional.h"
+//G. Caron, Mar. 2021, rebase Feb. 2023
+#include "stellavslam/camera/omnidirectional.h"
 
 #include <iostream>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
-namespace openvslam {
+namespace stellavslam {
 namespace camera {
 
 omnidirectional::omnidirectional(const std::string& name, const color_order_t& color_order,
@@ -158,4 +158,4 @@ nlohmann::json omnidirectional::to_json() const {
 }
 
 } // namespace camera
-} // namespace openvslam
+} // namespace stellavslam

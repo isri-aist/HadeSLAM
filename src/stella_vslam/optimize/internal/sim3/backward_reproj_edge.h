@@ -114,6 +114,33 @@ inline Vec2_t equirectangular_backward_reproj_edge::cam_project(const Vec3_t& po
     return {cols_ * (0.5 + theta / (2 * M_PI)), rows_ * (0.5 - phi / M_PI)};
 }
 
+//G. Caron, Mar. 2021, rebase Feb. 2023
+class omnidirectional_backward_reproj_edge final : public base_backward_reproj_edge {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    omnidirectional_backward_reproj_edge();
+
+    Vec2_t cam_project(const Vec3_t& pos_c) const override;
+
+    double fx_, fy_, cx_, cy_, xi_;
+
+};
+
+//G. Caron, Mar. 2021, rebase Feb. 2023
+inline omnidirectional_backward_reproj_edge::omnidirectional_backward_reproj_edge()
+    : base_backward_reproj_edge() {}
+
+inline Vec2_t omnidirectional_backward_reproj_edge::cam_project(const Vec3_t& pos_c) const {      
+    // reproject onto the image
+    // sphere or 3D to normalized image plane
+    const double den = pos_c(2) + xi_ * sqrt(pos_c(0)*pos_c(0)+pos_c(1)*pos_c(1)+pos_c(2)*pos_c(2));
+
+    return {fx_ * pos_c(0) / den + cx_, fy_ * pos_c(1) / den + cy_};
+}
+
+
+
 } // namespace sim3
 } // namespace internal
 } // namespace optimize

@@ -1,11 +1,11 @@
-//G. Caron, Mar. 2021
+//G. Caron, Mar. 2021, rebase Feb. 2023
 
-#ifndef OPENVSLAM_CAMERA_OMNIDIRECTIONAL_H
-#define OPENVSLAM_CAMERA_OMNIDIRECTIONAL_H
+#ifndef STELLA_VSLAM_CAMERA_OMNIDIRECTIONAL_H
+#define STELLA_VSLAM_CAMERA_OMNIDIRECTIONAL_H
 
-#include "openvslam/camera/base.h"
+#include "stellavslam/camera/base.h"
 
-namespace openvslam {
+namespace stellavslam {
 namespace camera {
 
 class omnidirectional final : public base {
@@ -102,6 +102,6 @@ public:
 };
 
 } // namespace camera
-} // namespace openvslam
+} // namespace stellavslam
 
-#endif // OPENVSLAM_CAMERA_OMNIDIRECTIONAL_H
+#endif // STELLA_VSLAM_CAMERA_OMNIDIRECTIONAL_H

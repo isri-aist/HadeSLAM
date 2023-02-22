@@ -1,16 +1,42 @@
-//G. Caron, Mar. 2021
+//G. Caron, Mar. 2021, rebase Feb. 2023
 
-#include "openvslam/optimize/g2o/se3/omnidirectional_reproj_edge.h"
+#ifndef STELLA_VSLAM_OPTIMIZER_G2O_SE3_OMNIDIRECTIONAL_REPROJ_EDGE_H
+#define STELLA_VSLAM_OPTIMIZER_G2O_SE3_OMNIDIRECTIONAL_REPROJ_EDGE_H
 
-namespace openvslam {
+#include "stella_vslam/type.h"
+#include "stella_vslam/optimize/internal/landmark_vertex.h"
+#include "stella_vslam/optimize/internal/se3/shot_vertex.h"
+
+#include <g2o/core/base_binary_edge.h>
+
+namespace stella_vslam {
 namespace optimize {
-namespace g2o {
+namespace internal {
 namespace se3 {
 
-omnidirectional_reproj_edge::omnidirectional_reproj_edge()
-    : BaseBinaryEdge<2, Vec2_t, landmark_vertex, shot_vertex>() {}
+class omnidirectional_reproj_edge final : public g2o::BaseBinaryEdge<2, Vec2_t, landmark_vertex, shot_vertex> {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-bool omnidirectional_reproj_edge::read(std::istream& is) {
+    omnidirectional_reproj_edge();
+
+    bool read(std::istream& is) override;
+
+    bool write(std::ostream& os) const override;
+
+    void computeError() override;
+
+    void linearizeOplus() override;
+
+    Vec2_t cam_project(const Vec3_t& pos_c) const;
+
+    double fx_, fy_, cx_, cy_, xi_;
+};
+
+inline omnidirectional_reproj_edge::omnidirectional_reproj_edge()
+    : g2o::BaseBinaryEdge<2, Vec2_t, landmark_vertex, shot_vertex>() {}
+
+inline bool omnidirectional_reproj_edge::read(std::istream& is) {
     for (unsigned int i = 0; i < 2; ++i) {
         is >> _measurement(i);
     }
@@ -25,7 +51,7 @@ bool omnidirectional_reproj_edge::read(std::istream& is) {
     return true;
 }
 
-bool omnidirectional_reproj_edge::write(std::ostream& os) const {
+inline bool omnidirectional_reproj_edge::write(std::ostream& os) const {
     for (unsigned int i = 0; i < 2; ++i) {
         os << measurement()(i) << " ";
     }
@@ -37,7 +63,14 @@ bool omnidirectional_reproj_edge::write(std::ostream& os) const {
     return os.good();
 }
 
-void omnidirectional_reproj_edge::linearizeOplus() {
+inline void omnidirectional_reproj_edge::computeError() {
+    const auto v1 = static_cast<const shot_vertex*>(_vertices.at(1));
+    const auto v2 = static_cast<const landmark_vertex*>(_vertices.at(0));
+    const Vec2_t obs(_measurement);
+    _error = obs - cam_project(v1->estimate().map(v2->estimate()));
+}
+
+inline void omnidirectional_reproj_edge::linearizeOplus() {
     auto vj = static_cast<shot_vertex*>(_vertices.at(1)); //camera pose
     const ::g2o::SE3Quat& cam_pose_cw = vj->shot_vertex::estimate();
 
@@ -91,7 +124,17 @@ void omnidirectional_reproj_edge::linearizeOplus() {
     _jacobianOplusXj(1, 5) = fy_ * alpha * y / rho; //dv / dt_Z
 }
 
+inline Vec2_t omnidirectional_reproj_edge::cam_project(const Vec3_t& pos_c) const {      
+    // reproject onto the image
+    // sphere or 3D to normalized image plane
+    const double den = pos_c(2) + xi_ * sqrt(pos_c(0)*pos_c(0)+pos_c(1)*pos_c(1)+pos_c(2)*pos_c(2));
+
+    return {fx_ * pos_c(0) / den + cx_, fy_ * pos_c(1) / den + cy_};
+}
+
 } // namespace se3
-} // namespace g2o
+} // namespace internal
 } // namespace optimize
-} // namespace openvslam
+} // namespace stella_vslam
+
+#endif // STELLA_VSLAM_OPTIMIZER_G2O_SE3_OMNIDIRECTIONAL_REPROJ_EDGE_H

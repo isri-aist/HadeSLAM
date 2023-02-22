@@ -131,7 +131,9 @@ void initializer::create_initializer(data::frame& curr_frm) {
                     parallax_deg_thr_, reproj_err_thr_, use_fixed_seed_));
             break;
         }
-        case camera::model_type_t::Equirectangular: {
+        case camera::model_type_t::Equirectangular: 
+        case camera::model_type_t::Omnidirectional: //G. Caron, Mar. 2021
+        {
             initializer_ = std::unique_ptr<initialize::bearing_vector>(
                 new initialize::bearing_vector(
                     init_frm_, num_ransac_iters_, min_num_triangulated_pts_, min_num_valid_pts_,
@@ -279,7 +281,7 @@ bool initializer::create_map_for_monocular(data::bow_vocabulary* bow_vocab, data
 
     if (indefinite_scale) {
         // scale the map so that the median of depths is 1.0
-        const auto median_depth = init_keyfrm->compute_median_depth(init_keyfrm->camera_->model_type_ == camera::model_type_t::Equirectangular);
+        const auto median_depth = init_keyfrm->compute_median_depth((init_keyfrm->camera_->model_type_ == camera::model_type_t::Equirectangular) || (init_keyfrm->camera_->model_type_ == camera::model_type_t::Omnidirectional));  //G. Caron, Mar. 2021
         const auto inv_median_depth = 1.0 / median_depth;
         if (curr_keyfrm->get_num_tracked_landmarks(1) < min_num_triangulated_pts_ && median_depth < 0) {
             spdlog::info("seems to be wrong initialization, resetting");

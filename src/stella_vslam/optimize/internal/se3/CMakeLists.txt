@@ -1,6 +1,8 @@
 # Add sources
 target_sources(${PROJECT_NAME}
                PRIVATE
+               ${CMAKE_CURRENT_SOURCE_DIR}/omnidirectional_pose_opt_edge.h
+               ${CMAKE_CURRENT_SOURCE_DIR}/omnidirectional_reproj_edge.h
                ${CMAKE_CURRENT_SOURCE_DIR}/equirectangular_pose_opt_edge.h
                ${CMAKE_CURRENT_SOURCE_DIR}/equirectangular_reproj_edge.h
                ${CMAKE_CURRENT_SOURCE_DIR}/perspective_pose_opt_edge.h

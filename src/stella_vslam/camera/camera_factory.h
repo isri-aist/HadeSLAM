@@ -6,6 +6,7 @@
 #include "stella_vslam/camera/fisheye.h"
 #include "stella_vslam/camera/equirectangular.h"
 #include "stella_vslam/camera/radial_division.h"
+#include "stella_vslam/camera/omnidirectional.h"
 
 #include <spdlog/spdlog.h>
 
@@ -37,6 +38,10 @@ public:
                     camera = new camera::radial_division(node);
                     break;
                 }
+                case camera::model_type_t::Omnidirectional: {
+                    camera = new camera::omnidirectional(node);
+                    break;
+                }
             }
         }
         catch (const std::exception& e) {
@@ -52,6 +57,9 @@ public:
         if (camera->setup_type_ == camera::setup_type_t::Stereo || camera->setup_type_ == camera::setup_type_t::RGBD) {
             if (camera->model_type_ == camera::model_type_t::Equirectangular) {
                 throw std::runtime_error("Not implemented: Stereo or RGBD of equirectangular camera model");
+            }
+						else if (camera->model_type_ == camera::model_type_t::Omnidirectional) {
+                throw std::runtime_error("Not implemented: Stereo or RGBD of omnidirectional camera model");
             }
         }
         return camera;
