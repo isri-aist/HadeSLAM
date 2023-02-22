@@ -53,7 +53,10 @@ void omnidirectional_pose_opt_edge::linearizeOplus() {
     const auto y = Y / den;
     const auto y2 = y*y;
 
-    const auto alpha = std::sqrt(1+(1-xi_*xi_)*(x2+y2)); //be careful if xi_ > 1
+		auto fact = 1+(1-xi_*xi_)*(x2+y2);
+		if(fact < 0)
+			fact = 0;
+    const auto alpha = std::sqrt(fact); //be careful if xi_ > 1
 
     // 姿勢に対する微分 / Differentiation for pose: du / dp
     _jacobianOplusXi(0, 0) = fx_ * x*y; // du / dr_X

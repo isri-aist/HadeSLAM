@@ -49,7 +49,11 @@ public:
         }
         else
         {
-          bearing[0] = bearing[1] = 0.0;
+        	// Rough
+          //bearing[0] = bearing[1] = 0.0;
+          // should project to the closest on sphere
+          bearing[0] = x_normalized;
+          bearing[1] = y_normalized;
           bearing[2] = 1.0;
         }
 

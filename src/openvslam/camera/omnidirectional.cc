@@ -82,7 +82,11 @@ void omnidirectional::convert_keypoints_to_bearings(const std::vector<cv::KeyPoi
           bearings.at(idx) = Vec3_t{fact * x_normalized, fact * y_normalized, fact - xi_};
         }
         else
-          bearings.at(idx) = Vec3_t{0, 0, 1};
+        {
+          //bearings.at(idx) = Vec3_t{0, 0, 1}; //rough
+          bearings.at(idx) = Vec3_t{x_normalized, y_normalized, 1}; // should project to the closest on sphere
+          //bearings.erase(bearings.begin()+idx); //could be could if discarding undist_keypts too
+        }
     }
 }
 
@@ -90,7 +94,10 @@ void omnidirectional::convert_bearings_to_keypoints(const eigen_alloc_vector<Vec
     undist_keypts.resize(bearings.size());
     for (unsigned long idx = 0; idx < bearings.size(); ++idx) {
         // sphere or 3D to normalized image plane
-        const auto den = bearings.at(idx)(2) + xi_ * sqrt(bearings.at(idx)(0)*bearings.at(idx)(0)+bearings.at(idx)(1)*bearings.at(idx)(1)+bearings.at(idx)(2)*bearings.at(idx)(2));
+        /*const*/ auto den = bearings.at(idx)(2) + xi_ * sqrt(bearings.at(idx)(0)*bearings.at(idx)(0)+bearings.at(idx)(1)*bearings.at(idx)(1)+bearings.at(idx)(2)*bearings.at(idx)(2));
+        if(fabs(den) < 1e-10)
+        	den = 1.;
+        	 
         const auto x_normalized = bearings.at(idx)(0) / den;
         const auto y_normalized = bearings.at(idx)(1) / den;
 

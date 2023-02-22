@@ -263,7 +263,9 @@ bool initializer::create_map_for_monocular(data::frame& curr_frm) {
 
     spdlog::info("new map created with {} points: frame {} - frame {}", map_db_->get_num_landmarks(), init_frm_.id_, curr_frm.id_);
     state_ = initializer_state_t::Succeeded;
-std::cout << "A" << std::endl;
+
+	std::cout << "D" << std::endl;
+
     return true;
 }
 
