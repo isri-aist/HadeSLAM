@@ -40,8 +40,8 @@ inline bool omnidirectional_reproj_edge::read(std::istream& is) {
     for (unsigned int i = 0; i < 2; ++i) {
         is >> _measurement(i);
     }
-    for (unsigned int i = 0; i < 2; ++i) {
-        for (unsigned int j = i; j < 2; ++j) {
+    for (int i = 0; i < information().rows(); ++i) {
+        for (int j = i; j < information().cols(); ++j) {
             is >> information()(i, j);
             if (i != j) {
                 information()(j, i) = information()(i, j);
@@ -55,8 +55,8 @@ inline bool omnidirectional_reproj_edge::write(std::ostream& os) const {
     for (unsigned int i = 0; i < 2; ++i) {
         os << measurement()(i) << " ";
     }
-    for (unsigned int i = 0; i < 2; ++i) {
-        for (unsigned int j = i; j < 2; ++j) {
+    for (int i = 0; i < information().rows(); ++i) {
+        for (int j = i; j < information().cols(); ++j) {
             os << " " << information()(i, j);
         }
     }
@@ -72,7 +72,7 @@ inline void omnidirectional_reproj_edge::computeError() {
 
 inline void omnidirectional_reproj_edge::linearizeOplus() {
     auto vj = static_cast<shot_vertex*>(_vertices.at(1)); //camera pose
-    const ::g2o::SE3Quat& cam_pose_cw = vj->shot_vertex::estimate();
+    const g2o::SE3Quat& cam_pose_cw = vj->shot_vertex::estimate();
 
     auto vi = static_cast<landmark_vertex*>(_vertices.at(0)); //3D point
     const Vec3_t& pos_w = vi->landmark_vertex::estimate(); //3D point in the world frame

@@ -8,7 +8,7 @@
 #include "stella_vslam/camera/omnidirectional.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 #include "stella_vslam/optimize/internal/se3/perspective_pose_opt_edge.h"
 #include "stella_vslam/optimize/internal/se3/equirectangular_pose_opt_edge.h"
-#include "stella_vslam/optimize/g2o/se3/omnidirectional_pose_opt_edge.h" //G. Caron, Mar. 2021, rebase Feb. 2023
+#include "stella_vslam/optimize/internal/se3/omnidirectional_pose_opt_edge.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 
 #include <g2o/core/robust_kernel_impl.h>
 
@@ -210,7 +210,7 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
         case camera::model_type_t::Omnidirectional: {
             assert(is_monocular_);
 
-            auto c = static_cast<camera::omnidirectional*>(camera_);
+            const auto c = static_cast<const camera::omnidirectional*>(camera_);
 
             auto edge = new omnidirectional_pose_opt_edge();
 

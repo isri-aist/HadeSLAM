@@ -1,21 +1,20 @@
 //G. Caron, Mar. 2021, rebase Feb. 2023
-#include "stellavslam/camera/omnidirectional.h"
+#include "stella_vslam/camera/omnidirectional.h"
 
 #include <iostream>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
-namespace stellavslam {
+namespace stella_vslam {
 namespace camera {
 
 omnidirectional::omnidirectional(const std::string& name, const color_order_t& color_order,
                          const unsigned int cols, const unsigned int rows, const double fps,
                          const double fx, const double fy, const double cx, const double cy,
                          const double xi)
-    : base(name, setup_type_t::Monocular, model_type_t::Omnidirectional, color_order, cols, rows, fps, 0, 0),
-      fx_(fx), fy_(fy), cx_(cx), cy_(cy), fx_inv_(1.0 / fx), fy_inv_(1.0 / fy),
-      xi_(xi) {
+    : base(name, setup_type_t::Monocular, model_type_t::Omnidirectional, color_order, cols, rows, fps, 0.0, 0.0, 0.0),
+      fx_(fx), fy_(fy), cx_(cx), cy_(cy), fx_inv_(1.0 / fx), fy_inv_(1.0 / fy), xi_(xi) {
     spdlog::debug("CONSTRUCT: camera::omnidirectional");
 
     img_bounds_ = compute_image_bounds();
@@ -25,16 +24,16 @@ omnidirectional::omnidirectional(const std::string& name, const color_order_t& c
 }
 
 omnidirectional::omnidirectional(const YAML::Node& yaml_node)
-    : omnidirectional(yaml_node["Camera.name"].as<std::string>(),
+    : omnidirectional(yaml_node["name"].as<std::string>(),
                   load_color_order(yaml_node),
-                  yaml_node["Camera.cols"].as<unsigned int>(),
-                  yaml_node["Camera.rows"].as<unsigned int>(),
-                  yaml_node["Camera.fps"].as<double>(),
-                  yaml_node["Camera.fx"].as<double>(),
-                  yaml_node["Camera.fy"].as<double>(),
-                  yaml_node["Camera.cx"].as<double>(),
-                  yaml_node["Camera.cy"].as<double>(),
-                  yaml_node["Camera.xi"].as<double>()) {}
+                  yaml_node["cols"].as<unsigned int>(),
+                  yaml_node["rows"].as<unsigned int>(),
+                  yaml_node["fps"].as<double>(),
+                  yaml_node["fx"].as<double>(),
+                  yaml_node["fy"].as<double>(),
+                  yaml_node["cx"].as<double>(),
+                  yaml_node["cy"].as<double>(),
+                  yaml_node["xi"].as<double>()) {}
 
 omnidirectional::~omnidirectional() {
     spdlog::debug("DESTRUCT: camera::omnidirectional");
@@ -60,51 +59,43 @@ image_bounds omnidirectional::compute_image_bounds() const {
 
 }
 
-void omnidirectional::undistort_keypoints(const std::vector<cv::KeyPoint>& dist_keypts, std::vector<cv::KeyPoint>& undist_keypts) const {
-    undist_keypts = dist_keypts;
+cv::Point2f omnidirectional::undistort_point(const cv::Point2f& dist_pt) const {
+    return dist_pt;
 }
 
-void omnidirectional::convert_keypoints_to_bearings(const std::vector<cv::KeyPoint>& undist_keypts, eigen_alloc_vector<Vec3_t>& bearings) const {
-    bearings.resize(undist_keypts.size());
-    for (unsigned long idx = 0; idx < undist_keypts.size(); ++idx) {
-        // Barreto's model
-        Vec3_t bearing;
+Vec3_t omnidirectional::convert_point_to_bearing(const cv::Point2f& undist_pt) const {
+		// digital (pixel) to normalized
+    const auto x_normalized = (undist_pt.x - cx_) / fx_;
+    const auto y_normalized = (undist_pt.y - cy_) / fy_;
+    auto fact = 1.0+(1.0-xi_*xi_)*(x_normalized*x_normalized + y_normalized*y_normalized);
 
-        // digital (pixel) to normalized
-        const auto x_normalized = (undist_keypts.at(idx).pt.x - cx_) / fx_;
-        const auto y_normalized = (undist_keypts.at(idx).pt.y - cy_) / fy_;
-        auto fact = 1.0+(1.0-xi_*xi_)*(x_normalized*x_normalized + y_normalized*y_normalized);
-
-        if(fact >= 0.0)
-        {
-          fact = (xi_ + std::sqrt(fact)) / (x_normalized*x_normalized + y_normalized*y_normalized + 1.0);
-          // convert to spherical coordinates
-          bearings.at(idx) = Vec3_t{fact * x_normalized, fact * y_normalized, fact - xi_};
-        }
-        else
-        {
-          //bearings.at(idx) = Vec3_t{0, 0, 1}; //rough
-          bearings.at(idx) = Vec3_t{x_normalized, y_normalized, 1}; // should project to the closest on sphere
-          //bearings.erase(bearings.begin()+idx); //could be could if discarding undist_keypts too
-        }
+    if(fact >= 0.0)
+    {
+      fact = (xi_ + std::sqrt(fact)) / (x_normalized*x_normalized + y_normalized*y_normalized + 1.0);
+      // convert to spherical coordinates
+      return Vec3_t{fact * x_normalized, fact * y_normalized, fact - xi_};
     }
+    else
+    {
+      //bearings.at(idx) = Vec3_t{0, 0, 1}; //rough
+      return Vec3_t{x_normalized, y_normalized, 1}; // should project to the closest on sphere
+      //bearings.erase(bearings.begin()+idx); //could be could if discarding undist_keypts too
+    }
+
 }
 
-void omnidirectional::convert_bearings_to_keypoints(const eigen_alloc_vector<Vec3_t>& bearings, std::vector<cv::KeyPoint>& undist_keypts) const {
-    undist_keypts.resize(bearings.size());
-    for (unsigned long idx = 0; idx < bearings.size(); ++idx) {
-        // sphere or 3D to normalized image plane
-        /*const*/ auto den = bearings.at(idx)(2) + xi_ * sqrt(bearings.at(idx)(0)*bearings.at(idx)(0)+bearings.at(idx)(1)*bearings.at(idx)(1)+bearings.at(idx)(2)*bearings.at(idx)(2));
-        if(fabs(den) < 1e-10)
-        	den = 1.;
-        	 
-        const auto x_normalized = bearings.at(idx)(0) / den;
-        const auto y_normalized = bearings.at(idx)(1) / den;
+cv::Point2f omnidirectional::convert_bearing_to_point(const Vec3_t& bearing) const {
+		// sphere or 3D to normalized image plane
+    /*const*/ auto den = bearing[2] + xi_ * std::sqrt(bearing[0]*bearing[0]+bearing[1]*bearing[1]+bearing[2]*bearing[2]);
+    if(fabs(den) < 1e-10)
+    	den = 1.;
+    	 
+    const auto x_normalized = bearing[0] / den;
+    const auto y_normalized = bearing[1] / den;
 
-        // convert to pixel image coordinated
-        undist_keypts.at(idx).pt.x = fx_ * x_normalized + cx_;
-        undist_keypts.at(idx).pt.y = fy_ * y_normalized + cy_;
-    }
+    // convert to pixel image coordinated
+		return cv::Point2f(fx_ * x_normalized + cx_, fy_ * y_normalized + cy_);
+
 }
 
 bool omnidirectional::reproject_to_image(const Mat33_t& rot_cw, const Vec3_t& trans_cw, const Vec3_t& pos_w, Vec2_t& reproj, float& x_right) const {
@@ -157,5 +148,34 @@ nlohmann::json omnidirectional::to_json() const {
             {"xi", xi_}};
 }
 
+std::ostream& operator<<(std::ostream& os, const omnidirectional& params) {
+    os << "- name: " << params.name_ << std::endl;
+    os << "- setup: " << params.get_setup_type_string() << std::endl;
+    os << "- fps: " << params.fps_ << std::endl;
+    os << "- cols: " << params.cols_ << std::endl;
+    os << "- rows: " << params.rows_ << std::endl;
+    os << "- color: " << params.get_color_order_string() << std::endl;
+    os << "- model: " << params.get_model_type_string() << std::endl;
+    os << "- focal x baseline: " << params.focal_x_baseline_ << std::endl;
+    os << "- num grid cols: " << params.num_grid_cols_ << std::endl;
+    os << "- num grid rows: " << params.num_grid_rows_ << std::endl;
+    os << "  - fx: " << params.fx_ << std::endl;
+    os << "  - fy: " << params.fy_ << std::endl;
+    os << "  - cx: " << params.cx_ << std::endl;
+    os << "  - cy: " << params.cy_ << std::endl;
+    os << "  - xi: " << params.xi_ << std::endl;
+    return os;
+}
+
+//! Override for optimization
+
+void omnidirectional::undistort_points(const std::vector<cv::Point2f>& dist_pts, std::vector<cv::Point2f>& undist_pts) const {
+    undist_pts = dist_pts;
+}
+
+void omnidirectional::undistort_keypoints(const std::vector<cv::KeyPoint>& dist_keypts, std::vector<cv::KeyPoint>& undist_keypts) const {
+    undist_keypts = dist_keypts;
+}
+
 } // namespace camera
-} // namespace stellavslam
+} // namespace stella_vslam

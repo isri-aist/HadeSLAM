@@ -8,7 +8,7 @@
 #include "stella_vslam/camera/omnidirectional.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 #include "stella_vslam/optimize/internal/se3/perspective_reproj_edge.h"
 #include "stella_vslam/optimize/internal/se3/equirectangular_reproj_edge.h"
-#include "stella_vslam/optimize/g2o/se3/omnidirectional_reproj_edge.h" //G. Caron, Mar. 2021, rebase Feb. 2023
+#include "stella_vslam/optimize/internal/se3/omnidirectional_reproj_edge.h" //G. Caron, Mar. 2021, rebase Feb. 2023
 
 #include <g2o/core/robust_kernel_impl.h>
 
