@@ -142,23 +142,43 @@ inline reproj_edge_wrapper<T>::reproj_edge_wrapper(const std::shared_ptr<T>& sho
             break;
         }
         case camera::model_type_t::Equirectangular: {
-            assert(is_monocular_);
+            if (is_monocular_) 
+            {
+                auto c = static_cast<camera::equirectangular*>(camera_);
 
-            auto c = static_cast<camera::equirectangular*>(camera_);
+                auto edge = new equirectangular_reproj_edge();
 
-            auto edge = new equirectangular_reproj_edge();
+                const Vec2_t obs{obs_x, obs_y};
+                edge->setMeasurement(obs);
+                edge->setInformation(Mat22_t::Identity() * inv_sigma_sq);
 
-            const Vec2_t obs{obs_x, obs_y};
-            edge->setMeasurement(obs);
-            edge->setInformation(Mat22_t::Identity() * inv_sigma_sq);
+                edge->cols_ = c->cols_;
+                edge->rows_ = c->rows_;
 
-            edge->cols_ = c->cols_;
-            edge->rows_ = c->rows_;
+                edge->setVertex(0, lm_vtx);
+                edge->setVertex(1, shot_vtx);
 
-            edge->setVertex(0, lm_vtx);
-            edge->setVertex(1, shot_vtx);
+                edge_ = edge;
+            }
+            else
+            {
+                auto c = static_cast<camera::equirectangular*>(camera_);
 
-            edge_ = edge;
+                auto edge = new stereo_equirectangular_reproj_edge();
+
+                const Vec3_t obs{obs_x, obs_y, obs_x_right};
+                edge->setMeasurement(obs);
+                edge->setInformation(Mat33_t::Identity() * inv_sigma_sq);
+
+                edge->cols_ = c->cols_;
+                edge->rows_ = c->rows_;
+                edge->true_baseline_ = camera_->true_baseline_;
+
+                edge->setVertex(0, lm_vtx);
+                edge->setVertex(1, shot_vtx);
+
+                edge_ = edge;
+            }
 
             break;
         }
@@ -199,8 +219,8 @@ inline reproj_edge_wrapper<T>::reproj_edge_wrapper(const std::shared_ptr<T>& sho
 
                 edge_ = edge;
             }
-					break;
-				}
+            break;
+        }
         //G. Caron, Mar. 2021
         case camera::model_type_t::Omnidirectional: {
             assert(is_monocular_);
