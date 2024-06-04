@@ -9,7 +9,8 @@ namespace camera {
 class equirectangular final : public base {
 public:
     equirectangular(const std::string& name, const color_order_t& color_order,
-                    const unsigned int cols, const unsigned int rows, const double fps);
+                    const unsigned int cols, const unsigned int rows, const double fps,
+                    const double focal_x_baseline = 0., const double depth_thr = 0.);
 
     equirectangular(const YAML::Node& yaml_node);
 

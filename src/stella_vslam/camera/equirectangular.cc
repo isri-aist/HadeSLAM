@@ -7,8 +7,9 @@ namespace stella_vslam {
 namespace camera {
 
 equirectangular::equirectangular(const std::string& name, const color_order_t& color_order,
-                                 const unsigned int cols, const unsigned int rows, const double fps)
-    : base(name, setup_type_t::Monocular, model_type_t::Equirectangular, color_order, cols, rows, fps, 0.0, 0.0, 0.0) {
+                                 const unsigned int cols, const unsigned int rows, const double fps,
+                                 const double true_baseline, const double depth_thr)
+    : base(name, setup_type_t::Monocular, model_type_t::Equirectangular, color_order, cols, rows, fps, 0.0, true_baseline, depth_thr) {
     spdlog::debug("CONSTRUCT: camera::equirectangular");
 
     img_bounds_ = compute_image_bounds();
@@ -22,7 +23,9 @@ equirectangular::equirectangular(const YAML::Node& yaml_node)
                       load_color_order(yaml_node),
                       yaml_node["cols"].as<unsigned int>(),
                       yaml_node["rows"].as<unsigned int>(),
-                      yaml_node["fps"].as<double>()) {}
+                      yaml_node["fps"].as<double>(),
+                      yaml_node["true_baseline"].as<double>(0.0),
+                      yaml_node["depth_threshold"].as<double>(40.0)) {}
 
 equirectangular::~equirectangular() {
     spdlog::debug("DESTRUCT: camera::equirectangular");
@@ -70,7 +73,10 @@ bool equirectangular::reproject_to_image(const Mat33_t& rot_cw, const Vec3_t& tr
     // convert to pixel image coordinated
     reproj(0) = cols_ * (0.5 + longitude / (2.0 * M_PI));
     reproj(1) = rows_ * (0.5 - latitude / M_PI);
-    x_right = 0.0;
+    //x_right = 0.0; 
+    //considering the disparity, it should be: 
+    x_right = cols_ * (0.5 + std::atan2(bearing(0) - true_baseline_, bearing(2)) / (2.0 * M_PI)); 
+    // focal_x_baseline_ is  used as baseline_ (in but since it should be zero except in true stereo case, what interest? x_right would be zero anyway
 
     return true;
 }
@@ -91,7 +97,9 @@ nlohmann::json equirectangular::to_json() const {
             {"fps", fps_},
             {"focal_x_baseline", focal_x_baseline_},
             {"num_grid_cols", num_grid_cols_},
-            {"num_grid_rows", num_grid_rows_}};
+            {"num_grid_rows", num_grid_rows_},
+            {"true_baseline", true_baseline_},
+            {"depth_thr", depth_thr_}};
 }
 
 std::ostream& operator<<(std::ostream& os, const equirectangular& params) {
@@ -105,6 +113,8 @@ std::ostream& operator<<(std::ostream& os, const equirectangular& params) {
     os << "- focal x baseline: " << params.focal_x_baseline_ << std::endl;
     os << "- num grid cols: " << params.num_grid_cols_ << std::endl;
     os << "- num grid rows: " << params.num_grid_rows_ << std::endl;
+    os << "- true baseline: " << params.true_baseline_ << std::endl;
+    os << "- depth_thr: " << params.depth_thr_ << std::endl;
     return os;
 }
 
