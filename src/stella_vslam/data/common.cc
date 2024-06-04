@@ -222,7 +222,28 @@ Vec3_t triangulate_stereo(const camera::base* camera,
             }
         }
         case camera::model_type_t::Equirectangular: {
-            throw std::runtime_error("Not implemented: Stereo or RGBD of equirectangular camera model");
+            auto equirectangular_camera = static_cast<const camera::equirectangular*>(camera);
+
+            const float depth = frm_obs.depths_.empty() ? -1.0f : frm_obs.depths_.at(idx);
+            if (0.0 < depth) {
+                const float x = frm_obs.undist_keypts_.at(idx).pt.x;
+                const float y = frm_obs.undist_keypts_.at(idx).pt.y;
+
+                // "From Google Street View to 3D City Models (ICCVW 2009)"
+                // convert to unit polar coordinates
+                const double lon = (x / equirectangular_camera->cols_ - 0.5) * (2.0 * M_PI);
+                const double lat = -(y / equirectangular_camera->rows_ - 0.5) * M_PI;
+                const Vec3_t pos_c{std::cos(lat) * std::sin(lon) * depth, -std::sin(lat) * depth, std::cos(lat) * std::cos(lon) * depth};
+
+                // Convert from camera coordinates to world coordinates
+                return rot_wc * pos_c + trans_wc;
+            }
+            else {
+                return Vec3_t::Zero();
+            }
+        }
+        case camera::model_type_t::Omnidirectional: {
+            throw std::runtime_error("Not implemented: Stereo or RGBD of omnidirectional camera model");
         }
         case camera::model_type_t::RadialDivision: {
             auto radial_division_camera = static_cast<const camera::radial_division*>(camera);

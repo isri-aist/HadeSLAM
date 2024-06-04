@@ -54,14 +54,21 @@ public:
         }
 
         assert(camera != nullptr);
-        if (camera->setup_type_ == camera::setup_type_t::Stereo || camera->setup_type_ == camera::setup_type_t::RGBD) {
+        if (camera->setup_type_ == camera::setup_type_t::Stereo) {
             if (camera->model_type_ == camera::model_type_t::Equirectangular) {
-                throw std::runtime_error("Not implemented: Stereo or RGBD of equirectangular camera model");
+                throw std::runtime_error("Not implemented: Stereo of equirectangular camera model");
             }
-						else if (camera->model_type_ == camera::model_type_t::Omnidirectional) {
-                throw std::runtime_error("Not implemented: Stereo or RGBD of omnidirectional camera model");
+			else if (camera->model_type_ == camera::model_type_t::Omnidirectional) {
+                throw std::runtime_error("Not implemented: Stereo of omnidirectional camera model");
             }
         }
+
+        if (camera->setup_type_ == camera::setup_type_t::RGBD) {
+            if (camera->model_type_ == camera::model_type_t::Omnidirectional) {
+                throw std::runtime_error("Not implemented: RGBD of omnidirectional camera model");
+            }
+        }
+
         return camera;
     }
 };
