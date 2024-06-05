@@ -142,10 +142,9 @@ inline reproj_edge_wrapper<T>::reproj_edge_wrapper(const std::shared_ptr<T>& sho
             break;
         }
         case camera::model_type_t::Equirectangular: {
+            auto c = static_cast<camera::equirectangular*>(camera_);
             if (is_monocular_) 
             {
-                auto c = static_cast<camera::equirectangular*>(camera_);
-
                 auto edge = new equirectangular_reproj_edge();
 
                 const Vec2_t obs{obs_x, obs_y};
@@ -162,8 +161,6 @@ inline reproj_edge_wrapper<T>::reproj_edge_wrapper(const std::shared_ptr<T>& sho
             }
             else
             {
-                auto c = static_cast<camera::equirectangular*>(camera_);
-
                 auto edge = new stereo_equirectangular_reproj_edge();
 
                 const Vec3_t obs{obs_x, obs_y, obs_x_right};

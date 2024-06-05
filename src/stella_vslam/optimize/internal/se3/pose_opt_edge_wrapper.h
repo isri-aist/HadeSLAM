@@ -142,24 +142,42 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
             break;
         }
         case camera::model_type_t::Equirectangular: {
-            assert(is_monocular_);
-
             const auto c = static_cast<const camera::equirectangular*>(camera_);
+            if (is_monocular_) 
+            {
+                auto edge = new equirectangular_pose_opt_edge();
 
-            auto edge = new equirectangular_pose_opt_edge();
+                const Vec2_t obs{obs_x, obs_y};
+                edge->setMeasurement(obs);
+                edge->setInformation(Mat22_t::Identity() * inv_sigma_sq);
 
-            const Vec2_t obs{obs_x, obs_y};
-            edge->setMeasurement(obs);
-            edge->setInformation(Mat22_t::Identity() * inv_sigma_sq);
+                edge->cols_ = c->cols_;
+                edge->rows_ = c->rows_;
 
-            edge->cols_ = c->cols_;
-            edge->rows_ = c->rows_;
+                edge->pos_w_ = pos_w;
 
-            edge->pos_w_ = pos_w;
+                edge->setVertex(0, shot_vtx);
 
-            edge->setVertex(0, shot_vtx);
+                edge_ = edge;
+            }
+            else
+            {
+                auto edge = new stereo_equirectangular_pose_opt_edge();
 
-            edge_ = edge;
+                const Vec3_t obs{obs_x, obs_y, obs_x_right};
+                edge->setMeasurement(obs);
+                edge->setInformation(Mat33_t::Identity() * inv_sigma_sq);
+
+                edge->cols_ = c->cols_;
+                edge->rows_ = c->rows_;
+                edge->true_baseline_ = camera_->true_baseline_;
+
+                edge->pos_w_ = pos_w;
+
+                edge->setVertex(0, shot_vtx);
+
+                edge_ = edge;
+            }
 
             break;
         }
