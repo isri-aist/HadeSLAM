@@ -100,7 +100,9 @@ void camera_database::from_json(const nlohmann::json& json_cameras) {
                 camera = new camera::equirectangular(camera_name, color_order,
                                                      json_camera.at("cols").get<unsigned int>(),
                                                      json_camera.at("rows").get<unsigned int>(),
-                                                     json_camera.at("fps").get<double>());
+                                                     json_camera.at("fps").get<double>(),
+                                                     json_camera.at("true_baseline").get<double>(),
+                                                     json_camera.at("depth_threshold").get<double>());
                 break;
             }
             case camera::model_type_t::RadialDivision: {
@@ -203,8 +205,11 @@ bool camera_database::from_db(sqlite3* db) {
                 break;
             }
             case camera::model_type_t::Equirectangular: {
+                auto true_baseline = sqlite3_column_double(stmt, 9);
+                auto depth_threshold = sqlite3_column_double(stmt, 10);
                 camera = new camera::equirectangular(camera_name, color_order,
-                                                     cols, rows, fps);
+                                                     cols, rows, fps,
+                                                     true_baseline, depth_threshold);
                 break;
             }
             case camera::model_type_t::RadialDivision: {
@@ -379,6 +384,13 @@ bool camera_database::to_db(sqlite3* db) const {
                 break;
             }
             case camera::model_type_t::Equirectangular: {
+                auto c = static_cast<camera::equirectangular*>(camera);
+                if (ret == SQLITE_OK) {
+                    ret = sqlite3_bind_double(stmt, 9, c->true_baseline_);
+                }
+                if (ret == SQLITE_OK) {
+                    ret = sqlite3_bind_double(stmt, 10, c->depth_thr_);
+                }
                 break;
             }
             case camera::model_type_t::RadialDivision: {
