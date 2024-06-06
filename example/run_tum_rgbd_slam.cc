@@ -38,6 +38,7 @@ namespace fs = ghc::filesystem;
 int mono_tracking(const std::shared_ptr<stella_vslam::system>& slam,
                   const std::shared_ptr<stella_vslam::config>& cfg,
                   const std::string& sequence_dir_path,
+                  const std::string& mask_img_path,
                   const unsigned int frame_skip,
                   const bool no_sleep,
                   const bool wait_loop_ba,
@@ -45,6 +46,9 @@ int mono_tracking(const std::shared_ptr<stella_vslam::system>& slam,
                   const std::string& eval_log_dir,
                   const std::string& map_db_path,
                   const bool disable_gui) {
+    // load the mask image
+    const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
+
     tum_rgbd_sequence sequence(sequence_dir_path);
     const auto frames = sequence.get_frames();
 
@@ -78,7 +82,7 @@ int mono_tracking(const std::shared_ptr<stella_vslam::system>& slam,
 
             if (!rgb_img.empty() && (i % frame_skip == 0)) {
                 // input the current frame and estimate the camera pose
-                slam->feed_monocular_frame(rgb_img, frame.timestamp_);
+                slam->feed_monocular_frame(rgb_img, frame.timestamp_, mask);
             }
 
             const auto tp_2 = std::chrono::steady_clock::now();
@@ -166,6 +170,7 @@ int mono_tracking(const std::shared_ptr<stella_vslam::system>& slam,
 int rgbd_tracking(const std::shared_ptr<stella_vslam::system>& slam,
                   const std::shared_ptr<stella_vslam::config>& cfg,
                   const std::string& sequence_dir_path,
+                  const std::string& mask_img_path,
                   const unsigned int frame_skip,
                   const bool no_sleep,
                   const bool wait_loop_ba,
@@ -173,6 +178,9 @@ int rgbd_tracking(const std::shared_ptr<stella_vslam::system>& slam,
                   const std::string& eval_log_dir,
                   const std::string& map_db_path,
                   const bool disable_gui) {
+    // load the mask image
+    const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
+
     tum_rgbd_sequence sequence(sequence_dir_path);
     const auto frames = sequence.get_frames();
 
@@ -207,7 +215,7 @@ int rgbd_tracking(const std::shared_ptr<stella_vslam::system>& slam,
 
             if (!rgb_img.empty() && !depth_img.empty() && (i % frame_skip == 0)) {
                 // input the current frame and estimate the camera pose
-                slam->feed_RGBD_frame(rgb_img, depth_img, frame.timestamp_);
+                slam->feed_RGBD_frame(rgb_img, depth_img, frame.timestamp_, mask);
             }
 
             const auto tp_2 = std::chrono::steady_clock::now();
@@ -303,6 +311,7 @@ int main(int argc, char* argv[]) {
     auto vocab_file_path = op.add<popl::Value<std::string>>("v", "vocab", "vocabulary file path");
     auto data_dir_path = op.add<popl::Value<std::string>>("d", "data-dir", "directory path which contains dataset");
     auto config_file_path = op.add<popl::Value<std::string>>("c", "config", "config file path");
+    auto mask_img_path = op.add<popl::Value<std::string>>("", "mask", "mask image path", "");
     auto frame_skip = op.add<popl::Value<unsigned int>>("", "frame-skip", "interval of frame skip", 1);
     auto no_sleep = op.add<popl::Switch>("", "no-sleep", "not wait for next frame in real time");
     auto wait_loop_ba = op.add<popl::Switch>("", "wait-loop-ba", "wait until the loop BA is finished");
@@ -388,10 +397,12 @@ int main(int argc, char* argv[]) {
 
     // run tracking
     int ret;
+    
     if (slam->get_camera()->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {
         ret = mono_tracking(slam,
                             cfg,
                             data_dir_path->value(),
+                            mask_img_path->value(),
                             frame_skip->value(),
                             no_sleep->is_set(),
                             wait_loop_ba->is_set(),
@@ -404,6 +415,7 @@ int main(int argc, char* argv[]) {
         ret = rgbd_tracking(slam,
                             cfg,
                             data_dir_path->value(),
+                            mask_img_path->value(),
                             frame_skip->value(),
                             no_sleep->is_set(),
                             wait_loop_ba->is_set(),
@@ -415,6 +427,7 @@ int main(int argc, char* argv[]) {
     else {
         throw std::runtime_error("Invalid setup type: " + slam->get_camera()->get_setup_type_string());
     }
+    
 
 #ifdef USE_GOOGLE_PERFTOOLS
     ProfilerStop();

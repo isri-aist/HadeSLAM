@@ -6,10 +6,10 @@
 namespace stella_vslam {
 namespace camera {
 
-equirectangular::equirectangular(const std::string& name, const color_order_t& color_order,
+equirectangular::equirectangular(const std::string& name, const setup_type_t& setup_type, const color_order_t& color_order,
                                  const unsigned int cols, const unsigned int rows, const double fps,
                                  const double true_baseline, const double depth_thr)
-    : base(name, setup_type_t::Monocular, model_type_t::Equirectangular, color_order, cols, rows, fps, 0.0, true_baseline, depth_thr) {
+    : base(name, setup_type, model_type_t::Equirectangular, color_order, cols, rows, fps, 0.0, true_baseline, depth_thr) {
     spdlog::debug("CONSTRUCT: camera::equirectangular");
 
     img_bounds_ = compute_image_bounds();
@@ -20,6 +20,7 @@ equirectangular::equirectangular(const std::string& name, const color_order_t& c
 
 equirectangular::equirectangular(const YAML::Node& yaml_node)
     : equirectangular(yaml_node["name"].as<std::string>(),
+                      load_setup_type(yaml_node),
                       load_color_order(yaml_node),
                       yaml_node["cols"].as<unsigned int>(),
                       yaml_node["rows"].as<unsigned int>(),

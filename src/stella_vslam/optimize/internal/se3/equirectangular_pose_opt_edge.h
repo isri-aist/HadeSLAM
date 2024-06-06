@@ -173,7 +173,7 @@ inline bool stereo_equirectangular_pose_opt_edge::write(std::ostream& os) const 
 }
 
 inline void stereo_equirectangular_pose_opt_edge::computeError() {
-    const auto v1 = static_cast<const shot_vertex*>(_vertices.at(1));
+    const auto v1 = static_cast<const shot_vertex*>(_vertices.at(0));
     const Vec3_t obs(_measurement);
     _error = obs - cam_project(v1->estimate().map(pos_w_));
 }

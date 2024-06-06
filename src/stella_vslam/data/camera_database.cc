@@ -97,7 +97,7 @@ void camera_database::from_json(const nlohmann::json& json_cameras) {
                 break;
             }
             case camera::model_type_t::Equirectangular: {
-                camera = new camera::equirectangular(camera_name, color_order,
+                camera = new camera::equirectangular(camera_name, setup_type, color_order,
                                                      json_camera.at("cols").get<unsigned int>(),
                                                      json_camera.at("rows").get<unsigned int>(),
                                                      json_camera.at("fps").get<double>(),
@@ -207,7 +207,7 @@ bool camera_database::from_db(sqlite3* db) {
             case camera::model_type_t::Equirectangular: {
                 auto true_baseline = sqlite3_column_double(stmt, 9);
                 auto depth_threshold = sqlite3_column_double(stmt, 10);
-                camera = new camera::equirectangular(camera_name, color_order,
+                camera = new camera::equirectangular(camera_name, setup_type, color_order,
                                                      cols, rows, fps,
                                                      true_baseline, depth_threshold);
                 break;
