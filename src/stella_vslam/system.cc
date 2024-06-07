@@ -417,7 +417,33 @@ data::frame system::create_RGBD_frame(const cv::Mat& rgb_img, const cv::Mat& dep
         }
 
         frm_obs.depths_.at(idx) = depth;
-        frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x - camera_->focal_x_baseline_ / depth;
+        switch (camera_->model_type_) {
+        case camera::model_type_t::Perspective:
+        case camera::model_type_t::Fisheye:
+        case camera::model_type_t::RadialDivision: {
+            frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x - camera_->focal_x_baseline_ / depth;
+            break;
+        }
+        case camera::model_type_t::Equirectangular: 
+        {
+            Vec3_t bearing = camera_->convert_point_to_bearing(undist_keypt.pt); 
+
+            // convert to unit polar coordinates
+            const auto latitude = -std::asin(bearing(1));
+            const auto longitude = std::atan2(bearing(0), bearing(2));
+
+            frm_obs.stereo_x_right_.at(idx) = camera_->cols_ * (0.5 + std::atan2(bearing(0) * depth - camera_->true_baseline_, bearing(2) * depth) / (2.0 * M_PI)); 
+
+            break;
+        }
+        case camera::model_type_t::Omnidirectional:
+        {
+            frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x; //not handled
+            break;
+        }
+    }
+
+        
     }
 
     // Convert to bearing vector
