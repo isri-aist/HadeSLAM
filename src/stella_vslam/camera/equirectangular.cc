@@ -65,7 +65,8 @@ cv::Point2f equirectangular::convert_bearing_to_point(const Vec3_t& bearing) con
 
 bool equirectangular::reproject_to_image(const Mat33_t& rot_cw, const Vec3_t& trans_cw, const Vec3_t& pos_w, Vec2_t& reproj, float& x_right) const {
     // convert to camera-coordinates
-    const Vec3_t bearing = (rot_cw * pos_w + trans_cw).normalized();
+    const Vec3_t pos_c = rot_cw * pos_w + trans_cw;
+    const Vec3_t bearing = pos_c.normalized();
 
     // convert to unit polar coordinates
     const auto latitude = -std::asin(bearing(1));
@@ -76,8 +77,8 @@ bool equirectangular::reproject_to_image(const Mat33_t& rot_cw, const Vec3_t& tr
     reproj(1) = rows_ * (0.5 - latitude / M_PI);
     //x_right = 0.0; 
     //considering the disparity, it should be: 
-    x_right = cols_ * (0.5 + std::atan2(bearing(0) - true_baseline_, bearing(2)) / (2.0 * M_PI)); 
-    // focal_x_baseline_ is  used as baseline_ (in but since it should be zero except in true stereo case, what interest? x_right would be zero anyway
+    x_right = cols_ * (0.5 + std::atan2(pos_c(0) - true_baseline_, pos_c(2)) / (2.0 * M_PI)); 
+    // focal_x_baseline_ is  used as baseline_ 
 
     return true;
 }
