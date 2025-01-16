@@ -43,7 +43,10 @@ system::system(const std::shared_ptr<config>& cfg, const std::string& vocab_file
     camera_ = camera::camera_factory::create(util::yaml_optional_ref(cfg->yaml_node_, "Camera"));
     //std::cout << "!!!!!!!!!!! RGBD ?" << ((camera_->setup_type_ == stella_vslam::camera::setup_type_t::RGBD)?"RGBD":"other") << std::endl;
     spdlog::info("!!!!!!!!!!!!!!!!!RGBD? \"{}\"", ((camera_->setup_type_ == stella_vslam::camera::setup_type_t::RGBD)?std::string("RGBD"):std::string("other")));
-
+    spdlog::info("img_bounds_.min_x: {}", camera_->img_bounds_.min_x_);
+    spdlog::info("img_bounds_.max_x: {}", camera_->img_bounds_.max_x_);
+    spdlog::info("img_bounds_.min_y: {}", camera_->img_bounds_.min_y_);
+    spdlog::info("img_bounds_.max_y: {}", camera_->img_bounds_.max_y_);
     orb_params_ = new feature::orb_params(util::yaml_optional_ref(cfg->yaml_node_, "Feature"));
     spdlog::info("load orb_params \"{}\"", orb_params_->name_);
 
@@ -418,30 +421,30 @@ data::frame system::create_RGBD_frame(const cv::Mat& rgb_img, const cv::Mat& dep
 
         frm_obs.depths_.at(idx) = depth;
         switch (camera_->model_type_) {
-        case camera::model_type_t::Perspective:
-        case camera::model_type_t::Fisheye:
-        case camera::model_type_t::RadialDivision: {
-            frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x - camera_->focal_x_baseline_ / depth;
-            break;
-        }
-        case camera::model_type_t::Equirectangular: 
-        {
-            Vec3_t bearing = camera_->convert_point_to_bearing(undist_keypt.pt); 
+            case camera::model_type_t::Perspective:
+            case camera::model_type_t::Fisheye:
+            case camera::model_type_t::RadialDivision: {
+                frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x - camera_->focal_x_baseline_ / depth;
+                break;
+            }
+            case camera::model_type_t::Equirectangular: 
+            {
+                Vec3_t bearing = camera_->convert_point_to_bearing(undist_keypt.pt); 
 
-            // convert to unit polar coordinates
-            const auto latitude = -std::asin(bearing(1));
-            const auto longitude = std::atan2(bearing(0), bearing(2));
+                // convert to unit polar coordinates
+                //const auto latitude = -std::asin(bearing(1));
+                //const auto longitude = std::atan2(bearing(0), bearing(2));
 
-            frm_obs.stereo_x_right_.at(idx) = camera_->cols_ * (0.5 + std::atan2(bearing(0) * depth - camera_->true_baseline_, bearing(2) * depth) / (2.0 * M_PI)); 
+                frm_obs.stereo_x_right_.at(idx) = camera_->cols_ * (0.5 + std::atan2(bearing(0) * depth - camera_->true_baseline_, bearing(2) * depth) / (2.0 * M_PI)); 
 
-            break;
+                break;
+            }
+            case camera::model_type_t::Omnidirectional:
+            {
+                frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x; //not handled
+                break;
+            }
         }
-        case camera::model_type_t::Omnidirectional:
-        {
-            frm_obs.stereo_x_right_.at(idx) = undist_keypt.pt.x; //not handled
-            break;
-        }
-    }
 
         
     }
@@ -485,6 +488,7 @@ std::shared_ptr<Mat44_t> system::feed_RGBD_frame(const cv::Mat& rgb_img, const c
         spdlog::warn("preprocess: empty image");
         return nullptr;
     }
+
     return feed_frame(create_RGBD_frame(rgb_img, depthmap, timestamp, mask), rgb_img);
 }
 
