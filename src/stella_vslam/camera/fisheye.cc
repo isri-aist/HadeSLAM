@@ -84,7 +84,7 @@ image_bounds fisheye::compute_image_bounds() const {
         const double pwx = (0.0 - cx_) / fx_;
         const double pwy = (0.0 - cy_) / fy_;
         const double theta_d = sqrt(pwx * pwx + pwy * pwy);
-
+        //std::cout << "theta_d = " << theta_d << std::endl;
         if (theta_d > M_PI / 2) {
             // fov is super wide (four corners are out of view)
 
@@ -129,10 +129,27 @@ image_bounds fisheye::compute_image_bounds() const {
             std::vector<cv::KeyPoint> undist_corners;
             undistort_keypoints(corners, undist_corners);
 
-            return image_bounds{std::min(undist_corners.at(0).pt.x, undist_corners.at(2).pt.x),
+            auto tentative_bounds = image_bounds{std::min(undist_corners.at(0).pt.x, undist_corners.at(2).pt.x),
                                 std::max(undist_corners.at(1).pt.x, undist_corners.at(3).pt.x),
                                 std::min(undist_corners.at(0).pt.y, undist_corners.at(1).pt.y),
                                 std::max(undist_corners.at(2).pt.y, undist_corners.at(3).pt.y)};
+
+            // Fix due to the above assuming the image circle is always bigger than the pixels grid. 
+            // Thus, below the tentative bounds are tested and changed if necessary. 
+            // However, the case of the image circle being much smaller than the pixels grid is not handled.
+            
+            if((tentative_bounds.min_x_ > 0) || (tentative_bounds.max_x_ < 0) || (tentative_bounds.min_y_ > 0) || (tentative_bounds.max_y_ < 0))
+            {
+                const std::vector<cv::KeyPoint> borders{cv::KeyPoint(cx_, 0.0, 1.0),    // top: min_y
+                                                    cv::KeyPoint(cols_, cy_, 1.0),  // right: max_x
+                                                    cv::KeyPoint(0.0, cy_, 1.0),    // left: min_x
+                                                    cv::KeyPoint(cx_, rows_, 1.0)}; // down: max_y
+                undist_corners.clear();
+                undistort_keypoints(borders, undist_corners);
+
+                return image_bounds{undist_corners.at(2).pt.x, undist_corners.at(1).pt.x, undist_corners.at(0).pt.y, undist_corners.at(3).pt.y};
+            }
+            return tentative_bounds;
         }
     }
 }
