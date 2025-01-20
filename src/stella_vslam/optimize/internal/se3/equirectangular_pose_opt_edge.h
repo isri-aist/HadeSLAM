@@ -120,6 +120,7 @@ inline Vec2_t equirectangular_pose_opt_edge::cam_project(const Vec3_t& pos_c) co
     return {cols_ * (0.5 + theta / (2 * M_PI)), rows_ * (0.5 - phi / M_PI)};
 }
 
+//G. Caron, June 2024
 class stereo_equirectangular_pose_opt_edge final : public g2o::BaseUnaryEdge<3, Vec3_t, shot_vertex> {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

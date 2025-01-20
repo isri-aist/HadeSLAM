@@ -1,3 +1,4 @@
+//G. Caron, June 2023
 #include "stella_vslam/camera/equirectangular.h"
 
 #include <spdlog/spdlog.h>
