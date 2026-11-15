@@ -46,12 +46,14 @@ Feedbacks and contributions are welcome!
 If HadeSLAM helps your research, please cite the paper for which we provide a BibTeX entry:
 
 ```
-@article{hadeslam2025,
+@inproceedings{hadeslam2027,
   author = {Caron, Guillaume and Sevillano, Grace and Paula, Matheus and Imamoglu, Nevrez},
-  title = {{Hybrid Appearance-Depth 360-degree Simulatenous Localization And Mapping}},
-  journal = {anonymous submission to the IEEE Trans. on Robotics, special section on Visual SLAM},
-  year = {2025},
-  pages = {1--10},
-  numpages = {10}
+  title = {{RGB-D 360-degree SLAM with Learned Depth}},
+  booktitle = {IEEE/SICE International Symposium on System Integration},
+  year = {2027},
+  month = {Jan.},
+  pages = {1--8},
+  numpages = {8},
+  address = {Kobe, Japan}
 }
 ```
